@@ -10,6 +10,8 @@ Install NPM and Bower dependencies
 ```bash
 $ npm install
 $ npm install -g bower
-cd assets
-bower install
+$ cd assets
+$ bower install
+$ cd ../
+$ sails lift
 ```
