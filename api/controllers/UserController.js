@@ -19,7 +19,7 @@ module.exports = {
 			User.findOne({username:req.param('username'),password:req.param('password')})
 			.exec(function findOneCB(err, User){
 				if(err){
-					return next(err);
+					return res.negotiate(err);
 				}
 	  		if(User){
 					req.session.authenticated = true;
@@ -34,7 +34,7 @@ module.exports = {
 	logout: function (req, res) {
 	  	req.session.authenticated = false;
 			req.session.User = false;
-			return res.redirect('login');
+			return res.ok({title:'Sucesso',message:'Você foi desconectado com sucesso!'},'login');
 	},
 
 	register: function (req,res){
@@ -44,25 +44,26 @@ module.exports = {
 		}
 		else{
 			User.findOne({username:req.param('username')})
-			.exec(function findOneCB(err, User){
+			.exec(function findOneCB(err, foundUser){
 				if(err){
-					return next(err);
+					return res.negotiate(err);
 				}
-				if(User)
+				if(foundUser)
 					return res.badRequest({title:'Erro',message:'Esse nome já está em uso'},'register');
-			});
-
-			User.create({username:req.param('username'),password:req.param('password')})
-			.exec(function findOneCB(err, User){
-				if(err){
-					return next(err);
+				else{
+					User.create({username:req.param('username'),password:req.param('password')})
+					.exec(function findOneCB(err, User){
+						if(err){
+							return res.negotiate(err);
+						}
+			  		if(User){
+							req.session.authenticated = true;
+							req.session.User = User;
+							return res.ok({"session":req.session},'tasks');
+						}
+						return res.badRequest({title:'Erro',message:'Ocorreu um erro interno'},'register');
+					});
 				}
-	  		if(User){
-					req.session.authenticated = true;
-					req.session.User = User;
-					return res.ok({"session":req.session},'tasks');
-				}
-				return res.badRequest({title:'Erro',message:'Ocorreu um erro interno'},'register');
 			});
 		}
 	},
@@ -72,7 +73,7 @@ module.exports = {
 			User.findOne({id:req.session.User.id})
 			.exec(function findOneCB(err, User){
 				if(err){
-					return next(err);
+					return res.negotiate(err);
 				}
 	  		if(User){
 					req.session.User = User;

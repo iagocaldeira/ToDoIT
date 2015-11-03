@@ -11,7 +11,7 @@ module.exports = {
 			Task.find({ where: { author: req.session.User.id }})
 			.exec(function search(err, Tasks){
 				if(err){
-					return next(err)
+					return res.negotiate(err)
 				}
 				else{
 					return res.ok(Tasks);
@@ -23,7 +23,7 @@ module.exports = {
 				 title: {'contains': req.param('keywords')} })
 				.exec(function search(err, Tasks){
 					if(err){
-						return next(err)
+						return res.negotiate(err)
 					}
 					else{
 						return res.ok(Tasks);

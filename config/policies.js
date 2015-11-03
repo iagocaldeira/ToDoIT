@@ -27,6 +27,26 @@ module.exports.policies = {
   ***************************************************************************/
 
   // '*': true,
+  UserController:{
+    'login' : true,
+    'logout' : 'sessionAuth',
+    'register' : true,
+    'getCurrent' : 'sessionAuth',
+    'update' : 'sessionAuth',
+    'find': false,
+    'findAll': false,
+    'destroy': false
+  },
+
+  TaskController:{
+    'findTasks' : 'sessionAuth',
+    'create' : 'sessionAuth',
+    'update' : 'sessionAuth',
+    'destroy' : 'sessionAuth',
+    'find' : 'sessionAuth',
+    'findAll': false,
+  }
+
 
   /***************************************************************************
   *                                                                          *

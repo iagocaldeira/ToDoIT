@@ -32,14 +32,14 @@ module.exports.routes = {
   *                                                                          *
   ***************************************************************************/
 
-  '/': { view: 'login' },
+  '/': [{policy:'sessionCheck'},{view:'tasks'}],
   'get /login': { view: 'login', locals:{ data:'' } },
   'get /register': { view: 'register', locals:{ data:'' } },
 
   'post /login': 'User.login',
   'post /register': 'User.register',
 
-  '/tasks' : {view:'tasks'},
+  '/tasks' : [{policy:'sessionAuth'},{view:'tasks'}],
   '/logout' : 'User.logout',
 
   /***************************************************************************

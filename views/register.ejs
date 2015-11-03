@@ -48,12 +48,14 @@ body {
 
   <h1>To-do IT!</h1>
   <h2> Sistema de Gerenciamento de Tarefas <h2>
-  <% if (data) { %>
-  <div class="alert alert-dismissible alert-info">
-    <button type="button" class="close" data-dismiss="alert">×</button>
-    <strong><%= data.title %></strong><%= data.message %>
-  </div>
-  <% } %>
+    <% if (typeof data != 'undefined') { %>
+    <% if (typeof data.message != 'undefined' && data.message != '') { %>
+    <div class="alert alert-dismissible alert-info">
+      <button type="button" class="close" data-dismiss="alert">×</button>
+      <strong> <%= data.title %> </strong> <%= data.message %>
+    </div>
+    <% } %>
+    <% } %>
   <div class="form-container">
   <form class="form-signin" action="/register" method="POST">
     <h2 class="form-signin-heading">Registre-se</h2>
