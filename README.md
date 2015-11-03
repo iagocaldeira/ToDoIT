@@ -15,3 +15,4 @@ $ bower install
 $ cd ../
 $ sails lift
 ```
+![Imgur](http://i.imgur.com/S1e9bQh.jpg)
