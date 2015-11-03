@@ -1,0 +1,285 @@
+<style>
+
+  .navbar{
+    border-radius:0px
+  }
+
+</style>
+<script>
+var app = angular.module('TodoList', [])
+  .controller('TaskController', function($scope) {
+    $scope.author = '';
+    $scope.tasks = [];
+
+    io.socket.get('/user/getCurrent', function (resData) {
+      $scope.author = resData.id;
+      $scope.$apply();
+    });
+
+    $scope.init = function(){
+      io.socket.get('/task/findTasks', function (resData) {
+        $scope.tasks = resData;
+        $scope.$apply();
+      });
+    };
+
+    $scope.search = function(keywords){
+      io.socket.get('/task/findTasks',{'keywords':keywords}, function (resData) {
+        $scope.tasks = resData;
+        $scope.$apply();
+      });
+    };
+
+    $scope.taskUpdateStatus = function(id,status){
+      io.socket.put('/task/'+id,{'status':status},function (resData){
+        $scope.init();
+      });
+    };
+
+    $scope.taskCreate = function(task){
+      var createTask = angular.copy(task);
+      createTask['author'] = $scope.author;
+      io.socket.post('/task',createTask,function (resData){
+        console.log(resData)
+        $scope.createTask = {};
+        $('.modal').modal('hide');
+        $scope.init();
+      });
+    };
+
+    $scope.taskDestroy = function(id){
+      io.socket.delete('/task/'+id,function (resData){
+        $scope.init();
+      });
+    };
+
+    $scope.taskEditOpen = function(task){
+      $scope.editTask = angular.copy(task);
+    };
+
+    $scope.taskEdit = function(task){
+      io.socket.put('/task/'+task.id,task,function (resData){
+        $('.modal').modal('hide');
+        $scope.init();
+      });
+    };
+
+
+  })
+  .controller('UserController', function($scope){
+    $scope.username = "";
+    $scope.userid = "";
+    $scope.init = function(){
+      io.socket.get('/user/getCurrent', function (resData) {
+        $scope.username = resData.username;
+        $scope.userid = resData.id;
+        $scope.$apply();
+      });
+    };
+
+    $scope.userEdit = function(user){
+      io.socket.put('/user/'+$scope.userid,user,function (resData){
+        $('.modal').modal('hide');
+        $scope.init();
+      });
+    };
+
+    $scope.search = function(keywords){
+      // Gambiarra por conta de visibilidade entre controllers
+      angular.element('.container').scope().search(keywords);
+    }
+  });
+</script>
+
+<div class="app" ng-app="TodoList">
+   <header ng-controller="UserController" ng-init="init()">
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">To-Do IT!</a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+
+          <form class="navbar-form navbar-left" role="search" ng-submit="search(keywords)">
+            <div class="form-group">
+              <input type="text" name="keywords" class="form-control" ng-model="keywords" placeholder="Nome da Tarefa">
+            </div>
+            <button type="submit" class="btn btn-default">Pesquisar</button>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li><a>{{ username }}</a></li>
+            <li>
+              <a href="#" data-toggle="modal" data-target="#updateUserModal">
+                <i alt="Configurações" class="glyphicon glyphicon-cog"></i> Configurações
+              </a>
+            </li>
+            <li><a href="/logout">Sair</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="modal" id="updateUserModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h4 class="modal-title">Atualizar Usuário</h4>
+          </div>
+          <div class="modal-body">
+            <form class="form-horizontal" ng-submit="userEdit(editUser)">
+              <fieldset>
+                <div class="form-group">
+                  <label for="username" class="col-lg-2 control-label">Nome de Usuário</label>
+                  <div class="col-lg-10">
+                    <input type="text" class="form-control" id="username" name="username" ng-model="editUser.username" placeholder="Usuário">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="password" class="col-lg-2 control-label">Senha</label>
+                  <div class="col-lg-10">
+                    <input type="password" class="form-control" id="password" name="password" ng-model="editUser.password" placeholder="Nova Senha">
+                  </div>
+                </div>
+              </fieldset>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Descartar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </header>
+
+  <div class="container" ng-controller="TaskController" ng-init="init()">
+    <a href="#" class="btn btn-default" style="margin-bottom:10px" data-toggle="modal" data-target="#createTaskModal" >
+      <i class="glyphicon glyphicon-plus"></i> Nova Tarefa
+    </a>
+
+    <div class="panel panel-primary" ng-repeat="task in tasks">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+          {{ task.title }}
+          <span class="label" style="margin-left:5px" ng-class="task.status=='Pronto'?'label-success':(task.status=='Em Andamento')?'label-info':'label-default'" >
+            {{ task.status }}
+          </span>
+        </h3>
+
+        <div class="btn-group" style="float:right;bottom: 22px;left: 7px;">
+          <a href="#" class="btn btn-default btn-xs" ng-click="taskDestroy(task.id)"><i class="glyphicon glyphicon-trash"></i></a>
+          <a href="#" class="btn btn-default btn-xs" data-toggle="modal" data-target="#updateTaskModal" ng-click="taskEditOpen(task)" >
+            <i class="glyphicon glyphicon-edit"></i>
+          </a>
+          <a href="#" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" ng-click="taskUpdateStatus(task.id, 'À Fazer')">À Fazer</a></li>
+            <li><a href="#" ng-click="taskUpdateStatus(task.id, 'Em Andamento')" >Em Andamento</a></li>
+            <li><a href="#" ng-click="taskUpdateStatus(task.id, 'Pronto')" >Pronto</a></li>
+          </ul>
+        </div>
+
+      </div>
+      <div class="panel-body">
+        {{ task.description }}
+      </div>
+    </div>
+
+    <div class="modal" id="createTaskModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h4 class="modal-title">Criar Tarefa</h4>
+          </div>
+          <div class="modal-body">
+            <form class="form-horizontal" ng-submit="taskCreate(createTask)">
+              <fieldset>
+                <div class="form-group">
+                  <label for="title" class="col-lg-2 control-label">Título</label>
+                  <div class="col-lg-10">
+                    <input type="text" class="form-control" id="title" name="title" ng-model="createTask.title">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="description" class="col-lg-2 control-label">Descrição</label>
+                  <div class="col-lg-10">
+                    <textarea class="form-control" rows="3" name="description" id="description" ng-model="createTask.description"></textarea>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="satus" class="col-lg-2 control-label">Status</label>
+                  <div class="col-lg-10">
+                    <select class="form-control" id="status" name="status" ng-model="createTask.status">
+                      <option>À Fazer</option>
+                      <option>Em Andamento</option>
+                      <option>Pronto</option>
+                    </select>
+                  </div>
+                </div>
+              </fieldset>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Descartar</button>
+                <button type="submit" class="btn btn-primary">Criar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="updateTaskModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h4 class="modal-title">Atualizar Tarefa</h4>
+          </div>
+          <div class="modal-body">
+            <form class="form-horizontal" ng-submit="taskEdit(editTask)">
+              <fieldset>
+                <div class="form-group">
+                  <label for="title" class="col-lg-2 control-label">Título</label>
+                  <div class="col-lg-10">
+                    <input type="text" class="form-control" id="title" name="title" placeholder="{{editTask.title}}" ng-model="editTask.title">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="description" class="col-lg-2 control-label">Descrição</label>
+                  <div class="col-lg-10">
+                    <textarea class="form-control" rows="3" name="description" id="description" ng-model="editTask.description"></textarea>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="satus" class="col-lg-2 control-label">Status</label>
+                  <div class="col-lg-10">
+                    <select class="form-control" id="status" name="status" ng-model="editTask.status">
+                      <option>À Fazer</option>
+                      <option>Em Andamento</option>
+                      <option>Pronto</option>
+                    </select>
+                  </div>
+                </div>
+              </fieldset>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Descartar</button>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
